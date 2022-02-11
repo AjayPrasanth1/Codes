@@ -1,0 +1,270 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  VPCCIDR:
+    Type: String
+    Description: Enter the VPC CIDR ranges
+    Default:  10.22.192.0/22
+  PublicSubnet1CIDR:
+    Type: String
+    Description: Enter the Public subnet 1 CIDR ranges 
+    Default: 10.22.194.0/26
+  PublicSubnet2CIDR:
+    Type: String
+    Description: Enter the Public subnet 2 CIDR ranges 
+    Default: 10.22.194.64/26
+  PrivateSubnet1CIDR:
+    Type: String
+    Description: Enter the Private subnet 1 CIDR ranges 
+    Default: 10.22.192.0/24
+  PrivateSubnet2CIDR:
+    Type: String
+    Description: Enter the Private subnet 2 CIDR ranges 
+    Default: 10.22.193.0/24
+  DataSubnet1CIDR:
+    Type: String
+    Description: Enter the Data subnet 1 CIDR ranges 
+    Default: 10.22.194.128/26
+  DataSubnet2CIDR:
+    Type: String
+    Description: Enter the Data subnet 2 CIDR ranges 
+    Default: 10.22.194.192/26   
+  NumberOfAvailablityZones:
+    Type: String
+    Default: two
+    Description: Enter the no of availablity zones 
+    AllowedValues:
+      - two
+      - one
+
+Conditions:
+  AvailablityZoneTwoCondition: !Equals [ !Ref NumberOfAvailablityZones, 'two' ]
+  
+      
+Resources:
+  
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VPCCIDR
+###################################################   
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref PublicSubnet1CIDR
+      MapPublicIpOnLaunch: true
+      Tags: 
+        - Key: Name
+          Value: PublicSubnet1
+ 
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Condition: AvailablityZoneTwoCondition
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref PublicSubnet2CIDR
+      MapPublicIpOnLaunch: true
+      Tags: 
+        - Key: Name
+          Value: PublicSubnet2
+ ###################################################
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      MapPublicIpOnLaunch: false
+      Tags: 
+        - Key: Name
+          Value: PrivateSubnet1
+ 
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Condition: AvailablityZoneTwoCondition
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      CidrBlock: !Ref PrivateSubnet2CIDR
+      MapPublicIpOnLaunch: false
+      Tags: 
+        - Key: Name
+          Value: PrivateSubnet2
+ ###################################################
+  DataSubnet1:
+    Type: AWS::EC2::Subnet
+    
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref DataSubnet1CIDR
+      MapPublicIpOnLaunch: false
+      Tags: 
+        - Key: Name
+          Value: DataSubnet1
+ 
+  DataSubnet2:
+    Type: AWS::EC2::Subnet
+    Condition: AvailablityZoneTwoCondition
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      CidrBlock: !Ref DataSubnet2CIDR
+      MapPublicIpOnLaunch: false
+      Tags: 
+        - Key: Name
+          Value: DataSubnet2
+#########################################################
+ 
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+  
+  GatewayToInternet:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+  
+###########################################
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+  
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: GatewayToInternet
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+ 
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+ 
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: AvailablityZoneTwoCondition
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+ ########################################################
+ 
+  NatGateway1:
+    Type: AWS::EC2::NatGateway
+    
+    DependsOn: NatPublicIP1
+    Properties: 
+      SubnetId: !Ref PublicSubnet1
+      AllocationId: !GetAtt NatPublicIP1.AllocationId
+  
+  NatPublicIP1:
+    Type: AWS::EC2::EIP
+    
+    DependsOn: VPC
+    Properties:
+      Domain: vpc
+      
+  NatGateway2:
+    Type: AWS::EC2::NatGateway
+    Condition: AvailablityZoneTwoCondition
+    DependsOn: NatPublicIP2
+    Properties: 
+      SubnetId: !Ref PublicSubnet2
+      AllocationId: !GetAtt NatPublicIP2.AllocationId
+  
+  NatPublicIP2:
+    Type: AWS::EC2::EIP
+    Condition: AvailablityZoneTwoCondition
+    DependsOn: VPC
+    Properties:
+      Domain: vpc
+ #############################################################
+  PrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    
+    Properties:
+      VpcId: !Ref VPC
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Condition: AvailablityZoneTwoCondition
+    Properties:
+      VpcId: !Ref VPC
+  PrivateRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      NatGatewayId: !Ref NatGateway1
+      RouteTableId: !Ref PrivateRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+
+  
+  PrivateRoute2:
+    Type: AWS::EC2::Route
+    Condition: AvailablityZoneTwoCondition
+    Properties:
+      NatGatewayId: !Ref NatGateway2
+      RouteTableId: !Ref PrivateRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+ 
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateRouteTable1
+ 
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: AvailablityZoneTwoCondition
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref PrivateRouteTable2
+##########################################################
+  DataRouteTable1:
+    Type: AWS::EC2::RouteTable
+    
+    Properties:
+      VpcId: !Ref VPC
+  DataRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Condition: AvailablityZoneTwoCondition
+    Properties:
+      VpcId: !Ref VPC
+  DataRoute1:
+    Type: AWS::EC2::Route
+    
+    Properties:
+      NatGatewayId: !Ref NatGateway1
+      RouteTableId: !Ref DataRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0 
+  
+  DataRoute2:
+    Type: AWS::EC2::Route
+    Condition: AvailablityZoneTwoCondition
+    Properties:
+      NatGatewayId: !Ref NatGateway2
+      RouteTableId: !Ref DataRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+ 
+  DataSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    
+    Properties:
+      SubnetId: !Ref DataSubnet1
+      RouteTableId: !Ref DataRouteTable1
+ 
+  DataSubnet2RouteTableAssociation:
+  
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: AvailablityZoneTwoCondition
+    Properties:
+      SubnetId: !Ref DataSubnet2
+      RouteTableId: !Ref DataRouteTable2
+################################################

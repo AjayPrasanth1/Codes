@@ -1,29 +1,21 @@
-import os 
-import requests
-metadadata_url="http://169.254.169.254/latest/meta-data"
-response=requests.get(metadadata_url)
-print(response.content)
+import os
+import json
+f= open('/run/cloud-init/instance-data-sensitive.json')
+data = json.load(f)
+#print(type(data))
+data_new=data.get("ds").get("meta-data")
+print("Below are the EC2 metadata Details     :         ",data_new)
 
-val = raw_input("Enter the details you want to know without / characters :")
-URl=metadadata_url+"/"+val
-response_user=requests.get(URl)
-print(response_user.content)
+def get_all_values(jsondata,datakey):
+    for key, value in jsondata.items():
+        if type(value) is dict:
+            get_all_values(value,datakey)
+        else:
+            if(datakey == key):
 
-while True:
-    val = raw_input("Enter the Specific Sub details without / characters :")
-    URl=URl+"/"+val
-    response=requests.get(URl)
-    
-
-    if ("404" not in response.content):
-        print(response.content)
-        continue
-    else:
-        print("404 Error......End of results ..Please run the file once again to check other fields")
-        break
+                print(key, ":", value)
+                break
 
 
-
-    
-
-
+datakey=input("Enter Data key you want to get : ")
+get_all_values(data_new,datakey)
