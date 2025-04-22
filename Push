@@ -1,4 +1,22 @@
- # Use the official Python image
+
+ VERSION=$(git describe --tags --always || echo "unknown")
+        SHA=$(git rev-parse HEAD || echo "unknown")
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+        echo "SHA=$SHA" >> $GITHUB_ENV
+        echo "Version: $VERSION"
+        echo "SHA: $SHA"
+
+    - name: Build Docker image
+      run: |
+        docker build --build-arg VERSION=$VERSION --build-arg SHA=$SHA -t my-flask-app .
+
+    - name: Push Docker image to registry
+      run: |
+        docker tag my-flask-app myusername/my-flask-app:$SHA
+        docker push myusername/my-flask-app:$SHA
+
+
+# Use the official Python image
 FROM python:3.9-slim
 
 # Set build arguments for version and SHA
