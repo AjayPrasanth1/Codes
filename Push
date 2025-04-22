@@ -1,5 +1,11 @@
   name: CI/CD Pipeline
+docker build \
+  --build-arg VERSION=1.2.3 \
+  --build-arg SHA=abc123 \
+  --build-arg BUILD_NUMBER=42 \
+  -t test-app .
 
+docker run -p 5000:5000 test-app
 on:
   push:
     branches:
