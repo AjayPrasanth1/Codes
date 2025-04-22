@@ -1,0 +1,94 @@
+# Clone the empty repo
+git clone https://github.com/your-username/microservice-template.git
+cd microservice-template
+
+# Create project files
+echo "
+fastapi
+uvicorn
+" > requirements.txt
+
+cat > main.py <<EOF
+from fastapi import FastAPI
+import os
+
+app = FastAPI()
+
+@app.get("/")
+def root():
+    return {"message": "Hello World"}
+
+@app.get("/status")
+def status():
+    return {
+        "my-application": [
+            {
+                "description": "my-application's description.",
+                "version": os.getenv("APP_VERSION", "1.0-1234"),
+                "sha": os.getenv("APP_SHA", "abc53458585")
+            }
+        ]
+    }
+EOF
+
+cat > Dockerfile <<EOF
+FROM python:3.9-slim
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY main.py .
+
+ENV APP_VERSION=1.0-1234
+ENV APP_SHA=abc53458585
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
+EOF
+
+mkdir -p .github/workflows
+cat > .github/workflows/ci.yml <<EOF
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  IMAGE_NAME: my-application
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run placeholder test
+        run: echo "No tests written yet."
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build Docker image
+        run: docker build -t \$IMAGE_NAME .
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Docker login
+        run: echo "\${{ secrets.DOCKER_PASSWORD }}" | docker login -u "\${{ secrets.DOCKER_USERNAME }}" --password-stdin
+      - name: Push image
+        run: |
+          GIT_SHA=\$(git rev-parse --short HEAD)
+          docker tag \$IMAGE_NAME \${{ secrets.DOCKER_USERNAME }}/\$IMAGE_NAME:\$GIT_SHA
+          docker push \${{ secrets.DOCKER_USERNAME }}/\$IMAGE_NAME:\$GIT_SHA
+EOF
+
+# Push to GitHub
+git add .
+git commit -m "Initial commit with FastAPI app, Dockerfile, and GitHub Actions"
+git push origin main
