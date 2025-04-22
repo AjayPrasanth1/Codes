@@ -1,5 +1,26 @@
-# Clone the empty repo
-git clone https://github.com/your-username/microservice-template.git
+ from flask import Flask, jsonify
+
+app = Flask(__name__)
+
+@app.route("/")
+def hello():
+    return jsonify({"message": "Hello World"})
+
+@app.route("/status")
+def status():
+    return jsonify({
+        "my-application": [
+            {
+                "description": "my-application's description.",
+                "version": "1.0-1234",
+                "sha": "abc53458585"
+            }
+        ]
+    })
+
+if __name__ == "__main__":
+    app.run(debug=True)Clone the empty repo
+ git clone https://github.com/your-username/microservice-template.git
 cd microservice-template
 
 # Create project files
