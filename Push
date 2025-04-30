@@ -1,4 +1,16 @@
-  name: CI/CD Pipeline
+As a DevOps Engineer, I set up a secure Windows/Linux infrastructure for a health insurance project. I automated deployments and used Alpine Linux to containerize Java applications for better performance. I also installed SonarQube on AWS EC2 to help improve code quality and speed up development.
+
+He is skilled at finding and fixing web application security issues. He built automation solutions using Shell and Groovy scripts, which were integrated with CI/CD tools like Jenkins and GitLab for smooth deployments on Windows, Ubuntu, Debian, CentOS, and Red Hat Linux systems.
+
+automated .NET deployments to IIS using Jenkins and MS Build. I set up Nagios for monitoring, created dashboards and alerts using Nagios and Zabbix, and used Graylog for log analysis and early issue detection.
+
+used Ansible to automate patching, fix vulnerabilities, and install packages on over 50 Windows and Linux servers. I migrated .NET apps to Windows Server 2019 R2 and moved Jenkins and GitLab to EKS, which helped cut compute costs. I also built AWS infrastructure using CloudFormation and Terraform, and improved application performance by analyzing the framework in depth.
+
+Implement GitOps using ArgoCD with automated sync, RBAC, and templated multi-cluster deployments via Helm/Kustomize.
+Enable progressive delivery with canary or blue-green strategies for robust CI/CD.
+
+
+name: CI/CD Pipeline
 docker build \
   --build-arg VERSION=1.2.3 \
   --build-arg SHA=abc123 \
